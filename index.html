@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html>
+<!-- python3 -m http.server 8002 -->
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        html,
+        body {
+            height: 100%;
+            margin: 0;
+        }
+
+        .container {
+            width: 400px;
+            height: 400px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: auto;
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            right: 0;
+        }
+
+        /* The switch - the box around the slider */
+        .switch {
+            font-size: 17px;
+            position: relative;
+            display: inline-block;
+            width: 5em;
+            height: 2.5em;
+            user-select: none;
+        }
+
+        /* Hide default HTML checkbox */
+        .switch .cb {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        /* The slider */
+        .toggle {
+            position: absolute;
+            cursor: pointer;
+            width: 100%;
+            height: 100%;
+            background-color: #373737;
+            border-radius: 0.1em;
+            transition: 0.4s;
+            text-transform: uppercase;
+            font-weight: 700;
+            overflow: hidden;
+            box-shadow: -0.3em 0 0 0 #373737, -0.3em 0.3em 0 0 #373737,
+                0.3em 0 0 0 #373737, 0.3em 0.3em 0 0 #373737, 0 0.3em 0 0 #373737;
+        }
+
+        .toggle>.left {
+            position: absolute;
+            display: flex;
+            width: 50%;
+            height: 88%;
+            background-color: #f3f3f3;
+            color: #373737;
+            left: 0;
+            bottom: 0;
+            align-items: center;
+            justify-content: center;
+            transform-origin: right;
+            transform: rotateX(10deg);
+            transform-style: preserve-3d;
+            transition: all 150ms;
+        }
+
+        .left::before {
+            position: absolute;
+            content: "";
+            width: 100%;
+            height: 100%;
+            background-color: rgb(206, 206, 206);
+            transform-origin: center left;
+            transform: rotateY(90deg);
+        }
+
+        .left::after {
+            position: absolute;
+            content: "";
+            width: 100%;
+            height: 100%;
+            background-color: rgb(112, 112, 112);
+            transform-origin: center bottom;
+            transform: rotateX(90deg);
+        }
+
+        .toggle>.right {
+            position: absolute;
+            display: flex;
+            width: 50%;
+            height: 88%;
+            background-color: #f3f3f3;
+            color: rgb(206, 206, 206);
+            right: 1px;
+            bottom: 0;
+            align-items: center;
+            justify-content: center;
+            transform-origin: left;
+            transform: rotateX(10deg) rotateY(-45deg);
+            transform-style: preserve-3d;
+            transition: all 150ms;
+        }
+
+        .right::before {
+            position: absolute;
+            content: "";
+            width: 100%;
+            height: 100%;
+            background-color: rgb(206, 206, 206);
+            transform-origin: center right;
+            transform: rotateY(-90deg);
+        }
+
+        .right::after {
+            position: absolute;
+            content: "";
+            width: 100%;
+            height: 100%;
+            background-color: rgb(112, 112, 112);
+            transform-origin: center bottom;
+            transform: rotateX(90deg);
+        }
+
+        .switch input:checked+.toggle>.left {
+            transform: rotateX(10deg) rotateY(45deg);
+            color: rgb(206, 206, 206);
+        }
+
+        .switch input:checked+.toggle>.right {
+            transform: rotateX(10deg) rotateY(0deg);
+            color: #487bdb;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- Tạo một thẻ chứa (div) cho công tắc chuyển đổi (switch) -->
+        <label class="switch">
+            <!-- Checkbox để người dùng bật/tắt trạng thái -->
+            <input id="the_switch" class="cb" type="checkbox" />
+            <!-- Thẻ span để tạo giao diện cho công tắc với hai trạng thái "on" và "off" -->
+            <span class="toggle">
+                <span class="left">off</span>
+                <span class="right">on</span>
+            </span>
+        </label>
+    </div>
+    <!-- Tải thư viện E-Ra Widget -->
+    <script>
+        const ALLOW_ORIGINS = [
+            'http://localhost:3000',
+            'http://localhost:3001',
+            'http://localhost:3002',
+            'https://app.e-ra.io',
+            'https://staging-app.e-ra.io',
+        ];
+
+        class EraWidget {
+            constructor() {
+            }
+
+            init({
+                origins = ALLOW_ORIGINS,
+                onConfiguration,
+                onValues,
+                onHistories,
+                ready = true,
+                mobileHeight = null,
+                needRealtimeConfigs = true,
+                needHistoryConfigs = true,
+                needActions = true,
+                maxRealtimeConfigsCount = 0,
+                maxHistoryConfigsCount = 0,
+                maxActionsCount = 0,
+                minRealtimeConfigsCount = 0,
+                minHistoryConfigsCount = 0,
+                minActionsCount = 0,
+            }) {
+                this.origins = origins;
+                this.urlParams = new URLSearchParams(window.location.search);
+                this.eraOrigin = this.urlParams.get('eraOrigin');
+                this.eraWidgetId = parseInt(this.urlParams.get('eraWidget'), 10);
+                this.onConfiguration = [onConfiguration];
+                this.onValues = [onValues];
+                this.onHistories = [onHistories];
+                this.maxRealtimeConfigsCount = maxRealtimeConfigsCount;
+                this.maxHistoryConfigsCount = maxHistoryConfigsCount;
+                this.maxActionsCount = maxActionsCount;
+                this.minRealtimeConfigsCount = minRealtimeConfigsCount;
+                this.minHistoryConfigsCount = minHistoryConfigsCount;
+                this.minActionsCount = minActionsCount;
+                this.needRealtimeConfigs = needRealtimeConfigs;
+                this.needHistoryConfigs = needHistoryConfigs;
+                this.needActions = needActions;
+
+                if (!this.origins.includes(this.eraOrigin)) {
+                    console.error('Invalid eraOrigin');
+                    return;
+                }
+                window.addEventListener('message', this.handleMessage.bind(this));
+
+                if (ready) {
+                    this.ready()
+                }
+                if (mobileHeight) {
+                    this.requestAdjustMobileHeight(mobileHeight)
+                }
+            }
+
+            handleMessage(event) {
+                // iframe and webview
+                if (event.origin !== this.eraOrigin && event.origin !== window.location.origin) {
+                    return;
+                }
+                if (event.data?.source !== 'eraIframeWidget') {
+                    return;
+                }
+                const { type, data } = event.data;
+                switch (type) {
+                    case 'configuration':
+                        this.configuration = data;
+                        this.triggerCallbacks(this.onConfiguration, data);
+                        break;
+                    case 'values':
+                        this.triggerCallbacks(this.onValues, data);
+                        break
+                    case 'histories':
+                        this.triggerCallbacks(this.onHistories, data);
+                        break
+                }
+            }
+
+            triggerCallbacks(callbacks, data) {
+                callbacks.forEach(cb => cb(data));
+            }
+
+            on(event, callback) {
+                switch (event) {
+                    case 'configuration':
+                        this.onConfiguration.push(callback);
+                        break;
+                    case 'values':
+                        this.onValues.push(callback);
+                        break;
+                    case 'histories':
+                        this.onHistories.push(callback);
+                        break;
+                }
+            }
+
+            off(event, callback) {
+                switch (event) {
+                    case 'configuration':
+                        this.onConfiguration = this.onConfiguration.filter(cb => cb !== callback);
+                        break;
+                    case 'values':
+                        this.onValues = this.onValues.filter(cb => cb !== callback);
+                        break;
+                    case 'histories':
+                        this.onHistories = this.onHistories.filter(cb => cb !== callback);
+                        break;
+                }
+            }
+
+            requestHistories(startTime, endTime) {
+                this.postMessage('requestHistories', [
+                    startTime,
+                    endTime,
+                ]);
+            }
+
+            postMessage(type, data) {
+                const message = {
+                    source: 'eraIframeWidget',
+                    type,
+                    data,
+                    eraWidgetId: this.eraWidgetId,
+                }
+
+                if (window.parent !== window) {
+                    window.parent.postMessage(message, this.eraOrigin);
+                    return;
+                }
+                window.ReactNativeWebView.postMessage(JSON.stringify(message));
+            }
+
+            ready() {
+                this.postMessage('ready', {
+                    needRealtimeConfigs: this.needRealtimeConfigs,
+                    needHistoryConfigs: this.needHistoryConfigs,
+                    needActions: this.needActions,
+                    maxRealtimeConfigsCount: this.maxRealtimeConfigsCount,
+                    maxHistoryConfigsCount: this.maxHistoryConfigsCount,
+                    maxActionsCount: this.maxActionsCount,
+                    minRealtimeConfigsCount: this.minRealtimeConfigsCount,
+                    minHistoryConfigsCount: this.minHistoryConfigsCount,
+                    minActionsCount: this.minActionsCount,
+                });
+            }
+
+            requestAdjustMobileHeight(height) {
+                this.postMessage('requestAdjustMobileHeight', height);
+            }
+
+            triggerAction(actionKey, actionIndex, data, silent = false) {
+                this.postMessage('triggerAction', { actionKey, actionIndex, data, silent });
+            }
+        }
+
+        try {
+            module.exports = new EraWidget();
+        } catch (e) {
+            window.eraWidget = new EraWidget();
+        }
+    </script>
+    <script>
+        const theSwitch = document.getElementById('the_switch');  /* Tạo tham chiếu tới phần tử HTML có id là 'the_switch' */
+        let configLed = null, newStatusLed = null, actions = [];  /* Khởi tạo các biến dùng để lưu cấu hình và trạng thái đèn LED  */
+
+        /* Tạo đối tượng EraWidget và gọi hàm khởi tạo với các cấu hình cần thiết */
+        const eraWidget = new EraWidget();
+        eraWidget.init({
+            needRealtimeConfigs: true,         /* Cần giá trị hiện thời */
+            needHistoryConfigs: true,          /* Cần giá trị lịch sử */
+            needActions: true,                 /* Cần các hành động (ví dụ Bật/Tắt đèn) */
+            maxRealtimeConfigsCount: 3,        /* Số lượng tối đa giá trị hiện thời */
+            maxHistoryConfigsCount: 1,         /* Số lượng tối đa giá trị lịch sử */
+            maxActionsCount: 2,                /* Số lượng tối đa các hành động có thể kích hoạt */
+            minRealtimeConfigsCount: 0,        /* Số lượng tối thiểu giá trị hiện thời */
+            minHistoryConfigsCount: 0,         /* Số lượng tối thiểu giá trị lịch sử */
+            minActionsCount: 0,                /* Số lượng tối thiểu hành động */
+
+            /* Hàm callback được gọi khi có cấu hình được nhận từ server */
+            onConfiguration: (configuration) => {
+                /* Cập nhật cấu hình đèn LED từ cấu hình thời gian thực đầu tiên */
+                configLed = configuration.realtime_configs[0];
+                actions = configuration.actions; /* Lưu danh sách các hành động được nhận */
+            },
+
+            /* Hàm callback được gọi khi nhận giá trị mới từ server */
+            onValues: (values) => {
+                /* Lấy trạng thái hiện tại của đèn LED từ giá trị của cấu hình */
+                const stateLed = values[configLed.id].value;
+
+                /* Kiểm tra nếu trạng thái đèn thay đổi */
+                if (newStatusLed !== stateLed) {
+                    newStatusLed = stateLed;      /* Cập nhật trạng thái mới của đèn */
+                    theSwitch.checked = stateLed; /* Thay đổi trạng thái của switch dựa trên trạng thái đèn */
+                }
+            },
+        });
+
+        /* Thêm sự kiện khi người dùng nhấp vào switch để kích hoạt hành động */
+        theSwitch.addEventListener('click', () => {
+            if (newStatusLed === 1) {
+                eraWidget.triggerAction(actions[1]?.action, null); /* Kích hoạt hành động 'Tắt' */
+            } else {
+                eraWidget.triggerAction(actions[0]?.action, null); /* Kích hoạt hành động 'Bật' */
+            }
+        });
+    </script>
+
+</body>
+
+</html>
